@@ -61,6 +61,13 @@ impl Extensions {
     pub fn clear(&mut self) {
         self.map.clear();
     }
+
+    /// Sets (or overrides) items from `other` into this map.
+    pub(crate) fn drain_from(&mut self, other: &mut Self) {
+        for (type_id, value) in other.map.drain() {
+            self.map.insert(type_id, value);
+        }
+    }
 }
 
 impl fmt::Debug for Extensions {
@@ -177,5 +184,28 @@ mod tests {
 
         assert_eq!(extensions.get::<bool>(), None);
         assert_eq!(extensions.get(), Some(&MyType(10)));
+    }
+
+    #[test]
+    fn test_drain_from() {
+        let mut ext = Extensions::new();
+        ext.insert(2isize);
+
+        let mut more_ext = Extensions::new();
+
+        more_ext.insert(5isize);
+        more_ext.insert(5usize);
+
+        assert_eq!(ext.get::<isize>(), Some(&2isize));
+        assert_eq!(ext.get::<usize>(), None);
+        assert_eq!(more_ext.get::<isize>(), Some(&5isize));
+        assert_eq!(more_ext.get::<usize>(), Some(&5usize));
+
+        ext.drain_from(&mut more_ext);
+
+        assert_eq!(ext.get::<isize>(), Some(&5isize));
+        assert_eq!(ext.get::<usize>(), Some(&5usize));
+        assert_eq!(more_ext.get::<isize>(), None);
+        assert_eq!(more_ext.get::<usize>(), None);
     }
 }
